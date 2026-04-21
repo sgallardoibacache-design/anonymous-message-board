@@ -55,7 +55,7 @@ module.exports = function (app) {
         const { text, delete_password } = req.body;
         const now = new Date();
 
-        await collection.insertOne({
+        const thread = {
           board,
           text,
           delete_password,
@@ -63,9 +63,12 @@ module.exports = function (app) {
           bumped_on: now,
           reported: false,
           replies: []
-        });
+        };
 
-        return res.redirect(`/b/${board}/`);
+        const result = await collection.insertOne(thread);
+        thread._id = result.insertedId;
+
+        return res.json(thread);
       } catch (err) {
         console.error(err);
         return res.status(500).send('server error');
@@ -171,7 +174,12 @@ module.exports = function (app) {
           return res.status(404).send('thread not found');
         }
 
-        return res.redirect(`/b/${req.params.board}/${thread_id}`);
+        const updatedThread = await collection.findOne({
+          _id: new ObjectId(thread_id),
+          board: req.params.board
+        });
+
+        return res.json(updatedThread);
       } catch (err) {
         console.error(err);
         return res.status(500).send('server error');
